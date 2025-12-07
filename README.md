@@ -1,6 +1,8 @@
 # ACE-Disappear
 Stop ACE‘s process when playing game
 
+# 你需要下载什么
+下载”ACEdisappear.cmd“到你的电脑上，并且放到一个便于你访问的位置
 # 使用说明
 进入游戏并且能够正常操作游戏页面之后，切换出游戏窗口，用管理员身份运行”ACEdisappear.cmd“，等待cmd提示成功即可。
 如果无法正常打开此脚本，建议以UTF-8模式以文本文件打开，复制命令在cmd中运行

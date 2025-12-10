@@ -1,0 +1,1 @@
+reg add "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "ACE_Disappear" /d "\"%~dp0ACE_Disappear.exe\""  /f 

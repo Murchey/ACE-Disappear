@@ -1,0 +1,1 @@
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\Run" /v "ACE_Disappear" /f 

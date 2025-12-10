@@ -1,102 +1,107 @@
-//encoding=GBK
-#define _WIN32_WINNT 0x0600 //µ÷ÓÃvistaÒÔÉÏµÄÏµÍ³api
-#define ACE_NAME      L"ACE-Guard Client.exe"
+//encoding=UTF-8
+#define _WIN32_WINNT 0x0600 //æ”¯æŒvistaåŠä»¥ä¸Šç³»ç»Ÿapi
+#define ACE_NAME      L"SGuard64.exe"
+// #define ACE_NAME      L"notepad.exe"
 #define SCRIPT_NAME   L"ACEDisappear.cmd"
-#define SCANNING_TIME 5*1000
+#define SCANNING_TIME 1*1000
 
 
 #include <windows.h>
-#include <tlhelp32.h>//½ø³Ì¿ìÕÕÏà¹ØµÄÍ·ÎÄ¼ş
-#include <shlwapi.h> //Æ´½ÓµØÖ·ËùÓÃµÄÍ·ÎÄ¼ş
+#include <tlhelp32.h>//è¿›ç¨‹å¿«ç…§ç›¸å…³çš„å¤´æ–‡ä»¶
+#include <shlwapi.h> //æ‹¼æ¥è·¯å¾„ä½¿ç”¨çš„å¤´æ–‡ä»¶
 #include <stdio.h>
-/*ĞÂÔö£ºÍĞÅÌËùĞè*/
+/*æ‰§è¡Œè„šæœ¬ä½¿ç”¨*/
 #include <shellapi.h>
 
-/*---------- ĞÂÔö£ºÍĞÅÌÏûÏ¢Óë²Ëµ¥ID ----------*/
+/*---------- è‡ªå®šä¹‰æ¶ˆæ¯å’Œæ¶ˆæ¯ID ----------*/
 #define WM_TRAY      (WM_USER + 1)
 #define ID_TRAY_EXIT 2001
 
-/*---------- ĞÂÔö£ºÈ«¾Ö±äÁ¿ ----------*/
-NOTIFYICONDATAW g_nid = {0}; //ÍĞÅÌÍ¼±ê½á¹¹
-HMENU           g_hMenu = NULL;//ÓÒ¼ü²Ëµ¥¾ä±ú
-HANDLE          g_hThread = NULL;//¼à¿ØÏß³Ì¾ä±ú
-BOOL            g_bRun = TRUE;  //Ïß³ÌÍË³ö±êÖ¾
+/*---------- å…¨å±€å˜é‡ ----------*/
+NOTIFYICONDATAW g_nid = {0}; //æ‰˜ç›˜å›¾æ ‡ç»“æ„
+HMENU           g_hMenu = NULL;//æ‰˜ç›˜èœå•å¥æŸ„
+HANDLE          g_hThread = NULL;//æ‰«æçº¿ç¨‹å¥æŸ„
+BOOL            g_bRun = TRUE;  //çº¿ç¨‹é€€å‡ºæ ‡è®°
 
-/*---------- ĞÂÔö£ºº¯ÊıÇ°ÏòÉùÃ÷ ----------*/
+/*---------- å‡½æ•°å£°æ˜ ----------*/
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 void CreateTrayIcon(HWND);
 void RemoveTrayIcon(void);
 void ShowTrayMenu(HWND);
-DWORD WINAPI MonitorThread(LPVOID); //¼à¿ØÏß³ÌÈë¿Ú
+DWORD WINAPI MonitorThread(LPVOID); //ç›‘æ§çº¿ç¨‹å‡½æ•°
 
-/*---------- ĞÂÔö£º¼à¿ØÏß³Ì(Ô­mainËÀÑ­»·ÒÆµ½ÕâÀï) ----------*/
+/*---------- ç›‘æ§çº¿ç¨‹(åŸmainçš„å¾ªç¯é€»è¾‘è¢«ç§»åˆ°æ­¤å¤„) ----------*/
 DWORD WINAPI MonitorThread(LPVOID)
 {
-    //µÃµ½½Å±¾µÄÂ·¾¶(±£³ÖÄãµÄ×¢ÊÍ)
-    wchar_t self[MAX_PATH];//´æ·Å½á¹ûµÄ»º´æ
-    GetModuleFileNameW(NULL,self, MAX_PATH);//NULL±íÊ¾µ±Ç°Ä£¿é£¬self±íÊ¾Êä³ö»º³åÇø£¬»º³åÇø´óĞ¡
-    PathRemoveFileSpecW(self);//°Ñ×îºóµÄÎÄ¼şÃû¿³µô£¬µÃµ½µ±Ç°µÄÎÄ¼şÄ¿Â¼
+    //è·å–è„šæœ¬è·¯å¾„(æ³¨æ„è·¯å¾„å¤„ç†)
+    wchar_t self[MAX_PATH];//å½“å‰ç¨‹åºè·¯å¾„
+    GetModuleFileNameW(NULL,self, MAX_PATH);//NULLè¡¨ç¤ºå½“å‰æ¨¡å—,selfè¡¨ç¤ºè¿”å›çš„ç¨‹åºè·¯å¾„å¤§å°
+    PathRemoveFileSpecW(self);//å»æ‰æ–‡ä»¶åå¾—åˆ°å½“å‰ç¨‹åºçš„ç›®å½•
     const wchar_t* fileName = SCRIPT_NAME;
     wchar_t fullPath[MAX_PATH];
-    PathCombineW(fullPath, self , fileName);//Æ´½ÓºóµÄÂ·¾¶fullPath
+    PathCombineW(fullPath, self , fileName);//æ‹¼æ¥å®Œæ•´è·¯å¾„fullPath
 
-    const wchar_t *TargetExe = ACE_NAME;//¶¨Òå¼àÊÓ½ø³Ì
-    const wchar_t *OpenFile = fullPath;//¶¨Òå½Å±¾½ø³Ì
-    //ÎªÁËÊ¹ÓÃÏà¶ÔÂ·¾¶£¬ĞèÒªÆ´½ÓÈí¼ş×ÔÉíµØÖ·ºÍ´ıÖ´ĞĞÎÄ¼şµÄµØÖ·
+    const wchar_t *TargetExe = ACE_NAME;//è¦ç›‘è§†çš„è¿›ç¨‹
+    const wchar_t *OpenFile = fullPath;//è¦æ‰§è¡Œçš„è„šæœ¬
+    //ä¸ºäº†ä½¿ç”¨ç›¸å¯¹è·¯å¾„éœ€è¦æ‹¼æ¥å½“å‰ç¨‹åºè·¯å¾„æ‰¾åˆ°åŒç›®å½•çš„è„šæœ¬è·¯å¾„
     printf("\nScript Location:\n");
     wprintf(fullPath);
 
     while (g_bRun)
     {
-        //´´½¨½ø³Ì¿ìÕÕ
+        //åˆ›å»ºè¿›ç¨‹å¿«ç…§
         HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0);
-        //µÚ¶ş¸ö²ÎÊı0±íÊ¾²»Ö¸¶¨µ¥¸ö½ø³Ì
+        //ç¬¬äºŒä¸ªå‚æ•°0è¡¨ç¤ºä¸æŒ‡å®šç³»ç»Ÿè¿›ç¨‹
         if(hSnap == INVALID_HANDLE_VALUE){
-            //´´½¨¿ìÕÕÊ§°ÜÖ®ºó
+            //å¦‚æœå¿«ç…§å¤±è´¥ä¹‹å
             printf("CreateToolhelp32Snapshot failed");
-            continue; //ÏÂ´ÎÖØÊÔ
+            continue; //ç»§ç»­ä¸‹ä¸€æ¬¡
         }
-        PROCESSENTRY32W pe;//½ø³ÌĞÅÏ¢½á¹¹Ìå
+        PROCESSENTRY32W pe;//è¿›ç¨‹ä¿¡æ¯ç»“æ„ä½“
         pe.dwSize  = sizeof(pe);
         if(!Process32FirstW(hSnap,&pe)){
-            //ÄÃ²»µ½µÚÒ»¸ö½ø³ÌµÄÊ±ºò
+            //è·å–ç¬¬ä¸€ä¸ªè¿›ç¨‹çš„æ—¶å€™
             printf("Process32FirstW failed. Cloud not get the first Process.");
             CloseHandle(hSnap);
-            continue; //ÏÂ´ÎÖØÊÔ
+            continue; //ç»§ç»­ä¸‹ä¸€æ¬¡
         }
 
-        //±éÀú½ø³Ì¾ö¶¨ÊÇ·ñÆô¶¯½Å±¾
+        //éå†è¿›ç¨‹åˆ—è¡¨æ˜¯å¦æ‰¾åˆ°è„šæœ¬
         do{
             if(_wcsicmp(pe.szExeFile,  TargetExe) == 0){
-                //µÚ¶ş¸ö²ÎÊıÊ¹ÓÃrunas±íÊ¾ÒÔ¹ÜÀíÔ±Éí·İÔËĞĞ½Å±¾£¬open±íÊ¾Õı³£´ò¿ª½Å±¾
-                ShellExecuteW(NULL, L"runas", OpenFile, NULL, self, SW_SHOWNORMAL);
-                printf("\nDetected The Process ACE-Guard Client.exe\n");
+                //ç¬¬äºŒä¸ªå‚æ•°ä½¿ç”¨runasè¡¨ç¤ºä»¥ç®¡ç†å‘˜æƒé™æ‰§è¡Œè„šæœ¬,openè¡¨ç¤ºä»¥æ™®é€šæƒé™æ‰§è¡Œ
+                HINSTANCE hResult = ShellExecuteW(NULL, L"runas", OpenFile, NULL, self, SW_SHOWNORMAL);
+                if ((INT_PTR)hResult <= 32) {
+                    printf("\nShellExecute failed with error code: %d\n", (INT_PTR)hResult);
+                } else {
+                    printf("\nDetected The Process ACE-Guard Client.exe\n");
+                }
                 break;
             }
-            //szExeFileÊÇ½ø³ÌÃû£¬ÀàĞÍÊÇ¿í×Ö·û£¬ÓÃ%ls´òÓ¡
+            //szExeFileæ˜¯è¿›ç¨‹çš„åç§°æ˜¯å®½å­—ç¬¦è¦ç”¨%lsæ‰“å°
         }while(Process32NextW(hSnap,&pe));
 
         CloseHandle(hSnap);
-        Sleep(SCANNING_TIME); //±£³ÖÄãÔ­À´µÄ10Ãë¼ä¸ô
+        Sleep(SCANNING_TIME); //ç­‰å¾…æ—¶é—´,ç°åœ¨æ˜¯1ç§’
     }
     return 0;
 }
 
-/*ĞÂÔö£º´°¿Ú¹ı³Ì£¬×¨ÃÅ´¦ÀíÍĞÅÌÓë²Ëµ¥ÏûÏ¢*/
+/*æ¶ˆæ¯å¤„ç†å‡½æ•°ä¸»è¦å“åº”æ‰˜ç›˜èœå•çš„æ¶ˆæ¯*/
 LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
 {
     switch (msg)
     {
     case WM_CREATE:
-        CreateTrayIcon(hWnd);//´´½¨Í¼±ê
-        //Æô¶¯¼à¿ØÏß³Ì(Ô­mainÂß¼­)
+        CreateTrayIcon(hWnd);//åˆ›å»ºæ‰˜ç›˜
+        //åˆ›å»ºç›‘æ§çº¿ç¨‹(åŸmainçš„å¾ªç¯)
         g_hThread = CreateThread(NULL, 0, MonitorThread, NULL, 0, NULL);
         return 0;
 
-    case WM_TRAY: //ÍĞÅÌ»Øµ÷
-        if (lp == WM_RBUTTONUP) //ÓÒ¼üµ¯²Ëµ¥
+    case WM_TRAY: //æ‰˜ç›˜æ¶ˆæ¯
+        if (lp == WM_RBUTTONUP) //å³é”®å¼¹å‡ºèœå•
         {
-            SetForegroundWindow(hWnd);//±ÜÃâ²Ëµ¥ÏûÊ§
+            SetForegroundWindow(hWnd);//é˜²æ­¢èœå•æ¶ˆå¤±
             ShowTrayMenu(hWnd);
         }
         return 0;
@@ -104,23 +109,23 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wp, LPARAM lp)
     case WM_COMMAND:
         if (LOWORD(wp) == ID_TRAY_EXIT)
         {
-            g_bRun = FALSE;        //Í¨ÖªÏß³ÌÍË³ö
+            g_bRun = FALSE;        //é€šçŸ¥çº¿ç¨‹é€€å‡º
             if (g_hThread) WaitForSingleObject(g_hThread, 3000);
-            PostQuitMessage(0);    //½áÊøÏûÏ¢Ñ­»·
+            PostQuitMessage(0);    //é€€å‡ºæ¶ˆæ¯å¾ªç¯
             return 0;
         }
         break;
 
     case WM_DESTROY:
     case WM_CLOSE:
-        RemoveTrayIcon(); //ÇåÀíÍ¼±ê
+        RemoveTrayIcon(); //åˆ é™¤æ‰˜ç›˜
         PostQuitMessage(0);
         return 0;
     }
     return DefWindowProcW(hWnd, msg, wp, lp);
 }
 
-/*ĞÂÔö£ºÍĞÅÌĞ¡¹¤¾ß¡ª¡ª´´½¨Í¼±ê*/
+/*ç¨‹åºæœ€å°åŒ–åˆ°æ‰˜ç›˜,åˆ›å»ºæ‰˜ç›˜å›¾æ ‡*/
 void CreateTrayIcon(HWND hWnd)
 {
     g_nid.cbSize  = sizeof(g_nid);
@@ -129,18 +134,18 @@ void CreateTrayIcon(HWND hWnd)
     g_nid.uFlags = NIF_ICON | NIF_MESSAGE | NIF_TIP;
     g_nid.uCallbackMessage = WM_TRAY;
     g_nid.hIcon  = (HICON)LoadImageW(NULL, IDI_INFORMATION, IMAGE_ICON, 0, 0, LR_SHARED);
-    /* Ìæ»» CreateTrayIcon ÖĞµÄ wcscpy_s µ÷ÓÃ */
+    /* æ›¿æ¢ CreateTrayIcon ä¸­çš„ wcscpy_s è°ƒç”¨ */
     wcscpy_s(g_nid.szTip,  ARRAYSIZE(g_nid.szTip),  L"ACE-Guard Watching");
     Shell_NotifyIconW(NIM_ADD, &g_nid);
 }
 
-/*ĞÂÔö£ºÉ¾³ıÍ¼±ê*/
+/*ç¨‹åºé€€å‡ºæ—¶åˆ é™¤æ‰˜ç›˜*/
 void RemoveTrayIcon(void)
 {
     Shell_NotifyIconW(NIM_DELETE, &g_nid);
 }
 
-/*ĞÂÔö£ºÏÔÊ¾ÓÒ¼ü²Ëµ¥*/
+/*å³é”®å¼¹å‡ºæ˜¾ç¤ºæ‰˜ç›˜èœå•*/
 void ShowTrayMenu(HWND hWnd)
 {
     if (!g_hMenu)
@@ -153,10 +158,10 @@ void ShowTrayMenu(HWND hWnd)
     TrackPopupMenu(g_hMenu, TPM_RIGHTBUTTON, pt.x, pt.y, 0, hWnd, NULL);
 }
 
-/*°Ñmain¸Ä³ÉWinMain£¬ÓÃÒş²Ø´°¿Ú³ĞÔØÍĞÅÌÓëÏûÏ¢Ñ­»·*/
+/*çœŸæ­£mainå‡½æ•°WinMainä¸»è¦ç”¨äºåˆ›å»ºæ¶ˆæ¯å¾ªç¯*/
 int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int)
 {
-    // 1. ×¢²á´°¿ÚÀà
+    // 1. æ³¨å†Œçª—å£ç±»
     const wchar_t CLASS_NAME[] = L"ACE_TrayCls";
     WNDCLASSEXW wc = {0};
     wc.cbSize         = sizeof(wc);
@@ -165,11 +170,11 @@ int WINAPI wWinMain(HINSTANCE hInst, HINSTANCE, LPWSTR, int)
     wc.lpszClassName  = CLASS_NAME;
     RegisterClassExW(&wc);
 
-    // 2. ´´½¨ÏûÏ¢-only´°¿Ú£¨²»¿É¼û£©
+    // 2. åˆ›å»ºæ¶ˆæ¯-onlyçª—å£ï¼Œä¸å¯è§çª—å£
     HWND hWnd = CreateWindowExW(0, CLASS_NAME, L"ACE_TrayWnd", 0,
                                 0, 0, 0, 0, HWND_MESSAGE, NULL, hInst, NULL);
 
-    // 3. ÏûÏ¢Ñ­»·
+    // 3. æ¶ˆæ¯å¾ªç¯
     MSG msg;
     while (GetMessageW(&msg, NULL, 0, 0))
     {
